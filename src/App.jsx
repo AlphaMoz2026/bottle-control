@@ -6,7 +6,8 @@ import Garrafas from './pages/Garrafas';
 import Vendas from './pages/Vendas';
 import Historico from './pages/Historico';
 import Utilizadores from './pages/Utilizadores';
-import CashGive from './pages/CashGive'; // <-- Nova importação
+import CashGive from './pages/CashGive';
+import Relatorios from './pages/Relatorios'; // <-- Nova importação
 
 function App() {
   return (
@@ -19,7 +20,8 @@ function App() {
         <Route path="/vendas" element={<Vendas />} />
         <Route path="/historico" element={<Historico />} />
         <Route path="/utilizadores" element={<Utilizadores />} />
-        <Route path="/cashgive" element={<CashGive />} /> {/* <-- Nova rota */}
+        <Route path="/cashgive" element={<CashGive />} />
+        <Route path="/relatorios" element={<Relatorios />} /> {/* <-- Nova rota */}
       </Routes>
     </BrowserRouter>
   );

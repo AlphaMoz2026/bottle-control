@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Wine, ShoppingCart, BarChart3, PlusCircle, Receipt, UserPlus, Bell, Check, X } from 'lucide-react';
+import { LogOut, Wine, ShoppingCart, BarChart3, PlusCircle, Receipt, UserPlus, Bell, Check, X, FileText, Menu } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
@@ -10,22 +10,16 @@ export default function Dashboard() {
     const [salesToday, setSalesToday] = useState(0);
     const [totalSalesCount, setTotalSalesCount] = useState(0);
 
-    // Estados para as notificações
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
 
+    // Estado para controlar o menu no telemóvel
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
     const fetchData = async () => {
-        // 1. Contar o total de produtos em stock
-        const { count: bottleCount } = await supabase
-            .from('bottles')
-            .select('*', { count: 'exact', head: true });
+        const { count: bottleCount } = await supabase.from('bottles').select('*', { count: 'exact', head: true });
+        const { data: salesData } = await supabase.from('sales').select('total_price');
 
-        // 2. Buscar TODAS as vendas
-        const { data: salesData } = await supabase
-            .from('sales')
-            .select('total_price');
-
-        // 3. Calcular os totais
         if (bottleCount !== null) setTotalBottles(bottleCount);
         if (salesData) {
             const totalRevenue = salesData.reduce((acc, sale) => acc + Number(sale.total_price), 0);
@@ -35,11 +29,7 @@ export default function Dashboard() {
     };
 
     const fetchNotifications = async () => {
-        const { data } = await supabase
-            .from('notifications')
-            .select('*')
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
+        const { data } = await supabase.from('notifications').select('*').eq('status', 'pending').order('created_at', { ascending: false });
         if (data) setNotifications(data);
     };
 
@@ -51,16 +41,7 @@ export default function Dashboard() {
     const handleNotification = async (notification, action) => {
         try {
             if (action === 'accept') {
-                // 1. Regista a transação na carteira
-                await supabase.from('wallet_transactions').insert([
-                    {
-                        sender_id: notification.sender_id,
-                        amount: notification.amount,
-                        type: 'cashgive',
-                        status: 'completed',
-                    },
-                ]);
-                // 2. Atualiza o estado da notificação
+                await supabase.from('wallet_transactions').insert([{ sender_id: notification.sender_id, amount: notification.amount, type: 'cashgive', status: 'completed' }]);
                 await supabase.from('notifications').update({ status: 'accepted' }).eq('id', notification.id);
                 alert("Transferência aceite com sucesso!");
             } else {
@@ -79,31 +60,40 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex">
+        <div className="min-h-screen bg-gray-100 flex relative overflow-hidden">
+
+            {/* OVERLAY (Fundo escuro quando o menu está aberto no telemóvel) */}
+            {isMobileMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                ></div>
+            )}
+
             {/* MENU LATERAL */}
-            <aside className="w-64 bg-gray-900 text-white flex flex-col">
-                <div className="p-6 text-2xl font-bold border-b border-gray-800">
-                    BOTTLE <span className="text-blue-500">CONTROL</span>
+            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0`}>
+                <div className="p-6 text-2xl font-bold border-b border-gray-800 flex justify-between items-center">
+                    <span>BOTTLE <span className="text-blue-500">CONTROL</span></span>
+                    <button className="md:hidden" onClick={() => setIsMobileMenuOpen(false)}><X className="w-6 h-6" /></button>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
-                    <button className="w-full flex items-center gap-3 p-3 bg-gray-800 rounded-lg text-left">
+                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                    <button onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 p-3 bg-gray-800 rounded-lg text-left">
                         <BarChart3 className="w-5 h-5" /> Dashboard
                     </button>
-
-                    <button onClick={() => navigate('/garrafas')} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
+                    <button onClick={() => { navigate('/garrafas'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
                         <Wine className="w-5 h-5" /> Produtos (Stock)
                     </button>
-
-                    <button onClick={() => navigate('/vendas')} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
+                    <button onClick={() => { navigate('/vendas'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
                         <ShoppingCart className="w-5 h-5" /> Vendas
                     </button>
-
-                    <button onClick={() => navigate('/historico')} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
+                    <button onClick={() => { navigate('/historico'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
                         <Receipt className="w-5 h-5" /> Histórico
                     </button>
-
-                    <button onClick={() => navigate('/utilizadores')} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
+                    <button onClick={() => { navigate('/relatorios'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
+                        <FileText className="w-5 h-5" /> Relatórios
+                    </button>
+                    <button onClick={() => { navigate('/utilizadores'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg text-left text-gray-400 hover:text-white transition">
                         <UserPlus className="w-5 h-5" /> Utilizadores
                     </button>
                 </nav>
@@ -116,26 +106,29 @@ export default function Dashboard() {
             </aside>
 
             {/* CONTEÚDO PRINCIPAL */}
-            <main className="flex-1 p-8 relative">
-                <header className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800">Visão Geral</h1>
-                        <p className="text-gray-500">Bem-vindo ao BOTTLE CONTROL</p>
+            <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen">
+                <header className="flex justify-between items-center mb-6 md:mb-8">
+                    <div className="flex items-center gap-4">
+                        {/* BOTÃO HAMBÚRGUER (Só aparece no telemóvel) */}
+                        <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden bg-white p-2 rounded-lg shadow-sm">
+                            <Menu className="w-6 h-6 text-gray-700" />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Visão Geral</h1>
+                            <p className="text-gray-500 text-sm hidden md:block">Bem-vindo ao BOTTLE CONTROL</p>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                         {/* SINO DE NOTIFICAÇÕES */}
                         <div className="relative">
                             <button onClick={() => setShowNotifications(!showNotifications)} className="relative bg-white p-2 rounded-full shadow-sm hover:bg-gray-50">
-                                <Bell className="w-6 h-6 text-gray-700" />
-                                {notifications.length > 0 && (
-                                    <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-                                )}
+                                <Bell className="w-5 h-5 md:w-6 md:h-6 text-gray-700" />
+                                {notifications.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
                             </button>
 
-                            {/* PAINEL DE NOTIFICAÇÕES */}
                             {showNotifications && (
-                                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl z-50 overflow-hidden border border-gray-100">
+                                <div className="absolute right-0 mt-2 w-72 md:w-80 bg-white rounded-xl shadow-2xl z-50 overflow-hidden border border-gray-100">
                                     <div className="p-3 bg-gray-50 border-b font-bold text-sm">Pedidos de Transferência</div>
                                     {notifications.length === 0 ? (
                                         <div className="p-4 text-center text-sm text-gray-500">Nenhum pedido pendente.</div>
@@ -159,36 +152,36 @@ export default function Dashboard() {
                             )}
                         </div>
 
-                        <button onClick={() => navigate('/vendas')} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 flex items-center gap-2">
-                            <PlusCircle className="w-5 h-5" /> Nova Venda
+                        <button onClick={() => navigate('/vendas')} className="bg-blue-600 text-white p-2 md:px-4 md:py-2 rounded-lg font-semibold hover:bg-blue-700 flex items-center gap-2">
+                            <PlusCircle className="w-5 h-5" /> <span className="hidden md:inline">Nova Venda</span>
                         </button>
                     </div>
                 </header>
 
                 {/* CARTÕES DE RESUMO */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="bg-blue-100 p-3 rounded-lg text-blue-600"><Wine className="w-6 h-6" /></div>
-                            <h2 className="text-lg font-semibold text-gray-700">Produtos em Stock</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                    <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-4">
+                            <div className="bg-blue-100 p-2 md:p-3 rounded-lg text-blue-600"><Wine className="w-5 h-5 md:w-6 md:h-6" /></div>
+                            <h2 className="text-sm md:text-lg font-semibold text-gray-700">Produtos em Stock</h2>
                         </div>
-                        <p className="text-3xl font-bold text-gray-800">{totalBottles}</p>
+                        <p className="text-2xl md:text-3xl font-bold text-gray-800">{totalBottles}</p>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="bg-green-100 p-3 rounded-lg text-green-600"><ShoppingCart className="w-6 h-6" /></div>
-                            <h2 className="text-lg font-semibold text-gray-700">Vendas Hoje</h2>
+                    <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-4">
+                            <div className="bg-green-100 p-2 md:p-3 rounded-lg text-green-600"><ShoppingCart className="w-5 h-5 md:w-6 md:h-6" /></div>
+                            <h2 className="text-sm md:text-lg font-semibold text-gray-700">Vendas Hoje</h2>
                         </div>
-                        <p className="text-3xl font-bold text-gray-800">{salesToday.toFixed(2)} MZN</p>
+                        <p className="text-2xl md:text-3xl font-bold text-gray-800">{salesToday.toFixed(2)} MZN</p>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="bg-purple-100 p-3 rounded-lg text-purple-600"><BarChart3 className="w-6 h-6" /></div>
-                            <h2 className="text-lg font-semibold text-gray-700">Total de Vendas</h2>
+                    <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-4">
+                            <div className="bg-purple-100 p-2 md:p-3 rounded-lg text-purple-600"><BarChart3 className="w-5 h-5 md:w-6 md:h-6" /></div>
+                            <h2 className="text-sm md:text-lg font-semibold text-gray-700">Total de Vendas</h2>
                         </div>
-                        <p className="text-3xl font-bold text-gray-800">{totalSalesCount}</p>
+                        <p className="text-2xl md:text-3xl font-bold text-gray-800">{totalSalesCount}</p>
                     </div>
                 </div>
             </main>
