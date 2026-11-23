@@ -12,7 +12,6 @@ export default function Login() {
         e.preventDefault();
         setLoading(true);
         try {
-            // 1. Autenticação com o Supabase
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -20,12 +19,16 @@ export default function Login() {
 
             if (error) throw error;
 
-            // 2. Se o login for bem-sucedido, guarda o utilizador e redireciona
-            localStorage.setItem('user', JSON.stringify(data.user));
-            alert("Login com sucesso! Bem-vindo ao BOTTLE CONTROL.");
+            // Verifica a função do utilizador (guardada nos metadados)
+            const userRole = data.user.user_metadata?.role || 'admin';
 
-            // 3. Redireciona para o Dashboard (rota que acabámos de criar)
-            navigate('/dashboard');
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            if (userRole === 'cashier') {
+                navigate('/vendas'); // Cashier vai direto para a frente de caixa
+            } else {
+                navigate('/dashboard'); // Admin vai para o dashboard
+            }
 
         } catch (error) {
             alert("Erro ao entrar: " + error.message);
@@ -43,29 +46,15 @@ export default function Login() {
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
+                        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                            className="mt-1 w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Senha</label>
-                        <input
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="mt-1 w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
+                        <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                            className="mt-1 w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-blue-600 text-white p-3 rounded-md font-bold hover:bg-blue-700 transition"
-                    >
+                    <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white p-3 rounded-md font-bold hover:bg-blue-700 transition">
                         {loading ? 'A entrar...' : 'Entrar'}
                     </button>
                 </form>

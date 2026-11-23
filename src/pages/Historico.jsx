@@ -10,7 +10,6 @@ export default function Historico() {
 
     useEffect(() => {
         const fetchSales = async () => {
-            // Vai buscar as vendas e junta com o nome da garrafa (relação da tabela)
             const { data, error } = await supabase
                 .from('sales')
                 .select(`
@@ -32,8 +31,9 @@ export default function Historico() {
     return (
         <div className="min-h-screen bg-gray-100 p-6">
             <header className="flex items-center gap-4 mb-8">
-                <button onClick={() => navigate('/dashboard')} className="bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50">
+                <button onClick={() => navigate('/vendas')} className="bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 flex items-center gap-2 px-4">
                     <ArrowLeft className="w-5 h-5 text-gray-700" />
+                    <span className="text-gray-700 font-semibold">Voltar</span>
                 </button>
                 <h1 className="text-2xl font-bold text-gray-800">Histórico de Vendas</h1>
             </header>
@@ -53,7 +53,7 @@ export default function Historico() {
                             <thead>
                                 <tr className="border-b text-gray-500 text-sm">
                                     <th className="pb-3">Data e Hora</th>
-                                    <th className="pb-3">Garrafa</th>
+                                    <th className="pb-3">Produto</th>
                                     <th className="pb-3">Qtd</th>
                                     <th className="pb-3 text-right">Total</th>
                                 </tr>
@@ -65,7 +65,7 @@ export default function Historico() {
                                             {new Date(sale.created_at).toLocaleString('pt-PT')}
                                         </td>
                                         <td className="py-3 font-semibold text-gray-700">
-                                            {sale.bottles?.name || 'Garrafa apagada'}
+                                            {sale.bottles?.name || 'Produto apagado'}
                                         </td>
                                         <td className="py-3">{sale.quantity} un.</td>
                                         <td className="py-3 text-right font-bold text-green-600">
